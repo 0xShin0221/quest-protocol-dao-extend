@@ -27,10 +27,20 @@ describe('RabbitholeReceipt Contract', async () => {
       10,
     ])
 
+    const erc20QuestContract = await ethers.getContractFactory('Erc20Quest')
+    const erc1155QuestContract = await ethers.getContractFactory('Erc1155Quest')
+    const rabbitHoleTicketsContract = await ethers.getContractFactory('RabbitHoleTickets')
+    const deployedErc20Quest = await erc20QuestContract.deploy()
+    const deployedErc1155Quest = await erc1155QuestContract.deploy()
+    const deployedRabbitHoleTickets = await rabbitHoleTicketsContract.deploy()
+
     deployedFactoryContract = await upgrades.deployProxy(questFactory, [
       royaltyRecipient.address,
       RHReceipt.address,
-      royaltyRecipient.address
+      deployedRabbitHoleTickets.address,
+      royaltyRecipient.address,
+      deployedErc20Quest.address,
+      deployedErc1155Quest.address,
     ])
 
     await RHReceipt.setQuestFactory(deployedFactoryContract.address)
@@ -51,6 +61,12 @@ describe('RabbitholeReceipt Contract', async () => {
 
       expect(await RHReceipt.balanceOf(firstAddress.address)).to.eq(1)
       expect(await RHReceipt.questIdForTokenId(1)).to.eq('def456')
+    })
+
+    it('reverts if not called by minter', async () => {
+      await expect(RHReceipt.connect(firstAddress).mint(firstAddress.address, 'def456')).to.be.revertedWith(
+        'Only minter'
+      )
     })
   })
 
@@ -77,9 +93,9 @@ describe('RabbitholeReceipt Contract', async () => {
 
   describe('getOwnedTokenIdsOfQuest', () => {
     it('returns the correct tokenIds', async () => {
-      await RHReceipt.mint(contractOwner.address, 'abc123')
-      await RHReceipt.mint(contractOwner.address, 'def456')
-      await RHReceipt.mint(contractOwner.address, 'eeeeee')
+      await RHReceipt.connect(minterAddress).mint(contractOwner.address, 'abc123')
+      await RHReceipt.connect(minterAddress).mint(contractOwner.address, 'def456')
+      await RHReceipt.connect(minterAddress).mint(contractOwner.address, 'eeeeee')
 
       let tokenIds = await RHReceipt.getOwnedTokenIdsOfQuest('abc123', contractOwner.address)
 
