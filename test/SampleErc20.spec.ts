@@ -1,5 +1,5 @@
-import {expect} from 'chai'
-import {ethers} from 'hardhat'
+import { expect } from 'chai'
+import { ethers } from 'hardhat'
 
 describe('Sample ERC-20 contract', async () => {
   let deployedErc20: any
